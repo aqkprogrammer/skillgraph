@@ -2,6 +2,8 @@
 
 **A career skill and learning path explorer, built on CognoDB.**
 
+[![CI](https://github.com/aqkprogrammer/skillgraph/actions/workflows/ci.yml/badge.svg)](https://github.com/aqkprogrammer/skillgraph/actions/workflows/ci.yml)
+
 SkillGraph maps how technical skills connect — to each other, to the roles that need them, to
 the technologies built on them and to the resources that teach them — and then lets you *walk*
 those connections. Pick a skill and see what to learn before it, what it unlocks, which careers it
@@ -715,6 +717,13 @@ why the path service verifies both endpoints before running `shortestPath`.
 
 ## Testing
 
+Lint, typecheck, tests and build run on every push and pull request via
+[GitHub Actions](.github/workflows/ci.yml). The build step deliberately runs with **no** `COGNODB_*`
+variables set — configuration is read lazily at request time rather than at import time, so a
+missing credential has to produce a friendly runtime state, not a broken build. CI would catch a
+regression that moved that validation to module load.
+
+
 ```bash
 npm test
 ```
@@ -991,6 +1000,5 @@ what a "Skill" looks like.
   so the messages currently going to `console.error` land somewhere durable.
 - **Integration tests against a real database.** `npm run verify` is a manual step today; running it
   against a throwaway Bolt container in CI would make it a gate.
-- **Automated deployment** — GitHub Actions running lint, typecheck, tests and build on every PR.
 - **A larger, sourced dataset.** 47 skills is enough to make the traversals interesting; a few
   thousand, derived from real job postings, would make the recommendations genuinely useful.
