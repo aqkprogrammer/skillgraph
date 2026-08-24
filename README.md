@@ -48,6 +48,7 @@ importing it is a **build error** — a leak into the browser bundle cannot ship
 - [Screenshots](#screenshots)
 - [Why a graph database?](#why-a-graph-database)
 - [The graph model](#the-graph-model)
+  - [On dataset size](#on-dataset-size--a-deliberate-trade-off)
 - [How it works](#how-it-works)
   - [The request lifecycle](#the-request-lifecycle)
   - [User flows](#user-flows)
@@ -285,6 +286,30 @@ seed script uses it as the `MERGE` key, which is what makes re-seeding idempoten
 
 **411 relationships** across 133 nodes.
 
+### On dataset size — a deliberate trade-off
+
+**133 nodes and 411 relationships is small**, and smaller than the "few thousand" the free tier can
+comfortably hold. That is a choice, and it is worth stating plainly rather than leaving it to look
+like an oversight.
+
+The dataset is **hand-curated, not generated**. Every one of the 51 `PREREQUISITE_FOR` edges is a
+dependency I would defend out loud — you really do need JavaScript before React, and Statistics
+before Machine Learning. All 42 learning resources point at real, publicly reachable pages (MDN, the
+Python tutorial, 3Blue1Brown, Hugging Face, the Rust book); none are invented. A test asserts every
+URL is unique and HTTPS, that no skill is isolated, and that the prerequisite graph contains
+**no cycles** — which matters, because a cycle would make "learn this first" meaningless.
+
+Inflating this to five thousand synthetic nodes would make the traversals *look* the same while
+meaning less: `shortestPath` would return routes nobody would actually take, and "what should I
+learn next?" would rank noise. The queries are written to scale — every traversal is bounded, every
+projection returns only the properties the UI renders, and the one query that would not scale (the
+`CONTAINS` search) is [called out as such](docs/queries.md#query-1--search) with the full-text index
+that should replace it.
+
+If genuine scale were the goal, the honest path is real data — parsing skill and requirement graphs
+out of job postings — not a generator. That is the first item under
+[what I would do with more time](#what-i-would-do-with-more-time).
+
 ### Two modelling decisions worth defending
 
 **Skill vs Technology.** A `Skill` is a competency; a `Technology` is a concrete product. Where the
@@ -496,17 +521,20 @@ a lookup key and never reaches the query text.
 
 ### 1. Create a CognoDB instance
 
-1. Sign up at the CognoDB console (use the signup link from your invitation).
-2. Create a new instance and choose the **free C0** tier. This dataset — 133 nodes, 411
-   relationships — sits well inside its limits.
-3. Wait for the instance to finish provisioning.
-4. Copy the **Bolt URI**. It looks like:
+1. Sign up at **https://console.cognodb.com/signup**. The free tier needs no credit card.
+2. Create a **free (c0)** instance and pick a region. It provisions in under a minute; each
+   workspace gets one free instance.
+3. Copy the **Bolt URI**. It looks like:
    ```
    bolt+s://db-a1b2c3d4.alpha.databases.cognodb.com
    ```
-5. Copy the **generated password** and store it somewhere safe. Most consoles show it exactly once —
-   if you lose it you will have to rotate it.
-6. Note the username. It is normally `cognodb`.
+4. Copy the **generated password** — the console shows it exactly once. If you lose it you will have
+   to rotate it.
+5. The username is `cognodb`.
+
+The c0 tier is burstable 0.5 vCPU / 256 MB RAM / 1 GB disk, with up to 200 connections. This
+dataset (133 nodes, 411 relationships) sits far inside those limits, and the driver caps its
+connection pool at 10 — see [Performance](#performance) and the note on dataset size below.
 
 ### 2. Configure the application
 
@@ -1000,5 +1028,6 @@ what a "Skill" looks like.
   so the messages currently going to `console.error` land somewhere durable.
 - **Integration tests against a real database.** `npm run verify` is a manual step today; running it
   against a throwaway Bolt container in CI would make it a gate.
-- **A larger, sourced dataset.** 47 skills is enough to make the traversals interesting; a few
-  thousand, derived from real job postings, would make the recommendations genuinely useful.
+- **A larger, sourced dataset.** 47 hand-curated skills make the traversals interesting and honest;
+  a few thousand parsed from real job postings would make the recommendations genuinely useful. That
+  is a data-acquisition problem, not a modelling one — the schema and every query would be unchanged.
