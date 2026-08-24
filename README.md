@@ -96,6 +96,7 @@ A demo recording outline is in [`docs/demo-script.md`](docs/demo-script.md).
 | ![Homepage](docs/screenshots/01-homepage.png) **Homepage** — search, inventory, popular paths, in-demand skills | ![Search](docs/screenshots/02-search-results.png) **Search** — one query across four node labels |
 | ![Skill detail](docs/screenshots/03-skill-detail.png) **Skill detail** — prerequisites, unlocks, roles, resources, multi-hop careers | ![Role detail](docs/screenshots/04-role-detail.png) **Role detail** — required skills, related roles, skill gaps |
 | ![Learning path](docs/screenshots/05-learning-path.png) **Learning path** — shortest route between two skills | ![Graph](docs/screenshots/06-graph-visualisation.png) **Graph explorer** — the neighbourhood around a node |
+| ![Empty state](docs/screenshots/07-empty-state.png) **First run** — connected, but nothing seeded yet | ![Database error](docs/screenshots/08-database-error.png) **Database unavailable** — one sentence, no internal detail |
 
 See [`docs/screenshots/README.md`](docs/screenshots/README.md) for how these were captured and how
 to refresh them.

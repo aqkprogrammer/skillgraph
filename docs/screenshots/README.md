@@ -10,6 +10,8 @@ These are captured from the running application against a seeded database — no
 | `04-role-detail.png` | `/roles/ml-engineer` | Flow C — required skills, technologies, derived *Related roles* with shared-skill counts, *Skill gaps*, and resources collected across every required skill |
 | `05-learning-path.png` | `/paths?from=javascript&to=machine-learning` | Flow D — `shortestPath` result rendered as ordered steps with each relationship labelled in its traversed direction |
 | `06-graph-visualisation.png` | `/explore?focus=react&depth=2` | Flow E — radial graph coloured by node label, plus *Reachable within 3 hops* grouped by type |
+| `07-empty-state.png` | `/` against an empty database | The intentional first-run state: *"Your knowledge graph is empty"* with the `npm run seed` command |
+| `08-database-error.png` | `/` with the database unreachable | *"We couldn't connect to the knowledge graph"* — and no URI, credential or driver message anywhere on the page |
 
 ## Refreshing them
 
@@ -35,14 +37,37 @@ shot 06-graph-visualisation 1250 "/explore?focus=react&depth=2"
 
 On Linux, replace `$CHROME` with `google-chrome` or `chromium`.
 
-## Two more worth capturing by hand
+## The two state screenshots
 
-Neither can be produced by the script above, because both need the database in an unusual state.
-Both are already implemented — these would just document them.
+`07` and `08` cannot be produced by the script above, because each needs the database in an unusual
+state. Both were captured the same way, by pointing `.env.local` (which overrides `.env`) somewhere
+else and restarting the dev server.
 
-- **`07-empty-state.png`** — point `.env.local` at an empty database (or run
-  `npm run seed -- --reset` and stop before re-seeding) and load `/`. Shows the intentional
-  first-run state: *"Your knowledge graph is empty"* with the `npm run seed` command.
-- **`08-database-error.png`** — stop the database, or set a deliberately wrong `COGNODB_PASSWORD`,
-  and load `/`. Shows *"We couldn't connect to the knowledge graph"* with a retry — and, more to the
-  point, shows that no URI, credential or driver message appears anywhere on the page.
+**`07-empty-state.png` — connected, but nothing seeded.** Captured against a real but empty Bolt
+database:
+
+```bash
+docker run -d --name skillgraph-empty -p 7688:7687 -e NEO4J_AUTH=neo4j/emptygraph123 neo4j:5-community
+printf 'COGNODB_URI=bolt://localhost:7688\nCOGNODB_USERNAME=neo4j\nCOGNODB_PASSWORD=emptygraph123\n' > .env.local
+npm run dev
+# /api/health → {"connected":true,"seeded":false,"stats":{...all zeros}}
+```
+
+This is the distinction the health endpoint exists to make: **connected but not seeded** is a
+different problem from **cannot connect**, and the UI says so — it shows the `npm run seed` command
+rather than an error.
+
+**`08-database-error.png` — cannot connect at all.** Captured by pointing at a host that does not
+resolve:
+
+```bash
+printf 'COGNODB_URI=bolt+s://db-unreachable-host.invalid.databases.cognodb.com\nCOGNODB_USERNAME=cognodb\nCOGNODB_PASSWORD=not-a-real-password\n' > .env.local
+npm run dev
+# /api/health → 503 {"data":null,"error":{"code":"DATABASE_UNAVAILABLE","message":"We couldn't connect…"}}
+```
+
+The point of this screenshot is what is **absent**: no URI, no username, no driver message, no stack
+trace. The driver's actual error (`Neo4jError: Failed to connect to server…`) went to the server log
+only.
+
+Afterwards, `rm .env.local` restores the real configuration.
