@@ -69,10 +69,21 @@ importing it is a **build error** — a leak into the browser bundle cannot ship
 
 ## Live demo
 
-> **🔗 https://YOUR-DEMO-URL**
->
-> **← Replace this placeholder with the deployed URL after following
-> [Deployment](#deployment).**
+### **▶ https://skillgraph-qadir-khan.vercel.app**
+
+Running on Vercel against a live CognoDB free-tier instance. Good places to start:
+
+| Link | What it shows |
+|---|---|
+| [Homepage](https://skillgraph-qadir-khan.vercel.app/) | Live graph inventory and the most in-demand skills |
+| [React](https://skillgraph-qadir-khan.vercel.app/skills/react) | The skill explorer — scroll to **"Careers two or more hops away"** |
+| [ML Engineer](https://skillgraph-qadir-khan.vercel.app/roles/ml-engineer) | Derived role similarity and **skill gaps** |
+| [JavaScript → Machine Learning](https://skillgraph-qadir-khan.vercel.app/paths?from=javascript&to=machine-learning) | `shortestPath` across the graph |
+| [HTML & CSS → Kubernetes](https://skillgraph-qadir-khan.vercel.app/paths?from=html-css&to=kubernetes) | The "no route exists" empty state |
+| [Graph explorer](https://skillgraph-qadir-khan.vercel.app/explore?focus=react&depth=3) | Heterogeneous reachability within 3 hops |
+| [Health check](https://skillgraph-qadir-khan.vercel.app/api/health) | `{ connected, seeded, stats }` straight from CognoDB |
+
+**Repository:** https://github.com/aqkprogrammer/skillgraph
 
 A demo recording outline is in [`docs/demo-script.md`](docs/demo-script.md).
 
@@ -837,6 +848,38 @@ free tier without modification.
    `{"connected": true, "seeded": true, ...}`. If `connected` is false the credentials are wrong; if
    `seeded` is false the database is empty.
 7. Replace the [Live demo](#live-demo) placeholder in this README with the deployed URL.
+
+### How the live demo was deployed
+
+For the record, the deployment above was made from the CLI rather than the dashboard:
+
+```bash
+vercel link --yes --project skillgraph
+
+# Values piped from .env so they are never echoed to the terminal or shell history.
+printf '%s' "$COGNODB_URI"      | vercel env add COGNODB_URI production
+printf '%s' "$COGNODB_USERNAME" | vercel env add COGNODB_USERNAME production
+printf '%s' "$COGNODB_PASSWORD" | vercel env add COGNODB_PASSWORD production
+
+vercel --prod --yes
+```
+
+One extra step is easy to miss: new Vercel projects enable **SSO deployment protection**, which
+returns a `302` to a Vercel login page for anyone who is not a team member. A demo link that only
+the owner can open is not a demo, so it was turned off:
+
+```bash
+vercel project protection            # show current settings
+vercel project protection disable --sso
+```
+
+Verify with the health endpoint, which distinguishes the two failure modes — bad credentials
+(`connected: false`) from an unseeded database (`seeded: false`):
+
+```bash
+curl -s https://skillgraph-qadir-khan.vercel.app/api/health
+# {"data":{"connected":true,"seeded":true,"stats":{...}},"error":null}
+```
 
 **Notes**
 
